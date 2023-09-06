@@ -144,3 +144,20 @@ def plot_tsne(X, dim=2, perplexity=30.0, scale_data=False):
     return X_embedded_TSNE
 
 X_embedded_TSNE = plot_tsne(X_five, dim=2, perplexity=20.0)#we've already scaled the data
+
+
+##### KPCA ######
+kpca = KernelPCA(n_components=2, kernel='sigmoid')  # We've found cosine is the best from all the kernels
+X_KPCA = kpca.fit_transform(X_five)
+fig = plt.figure(figsize=(8, 8))
+ax = fig.add_subplot(1, 1, 1, projection='3d')
+ax.scatter(X_KPCA[y0,0], X_KPCA[y0, 1], color='r', marker='*', label='ball {}'.format(labelsSix[0]))
+ax.scatter(X_KPCA[y1,0], X_KPCA[y1, 1], color='b', marker='x', label='ball {}'.format(labelsSix[1]))
+ax.scatter(X_KPCA[y2,0], X_KPCA[y2, 1], color='g', marker='o', label='ball {}'.format(labelsSix[2]))
+ax.grid()
+ax.legend()
+ax.set_title("2D KsigmoPCA")
+if not os.path.exists('./stat_fig/KsigmoPCA/col6_3labels'):
+    os.makedirs('./stat_fig/KsigmoPCA/col6_3labels')
+save_path = os.path.join('./stat_fig/KsigmoPCA/col6_3labels', '2D_KsigmoPCA.png')
+plt.savefig(save_path)
