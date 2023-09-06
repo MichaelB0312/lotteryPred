@@ -122,3 +122,25 @@ if not os.path.exists('./stat_fig/PCA/col6_3labels'):
 save_path = os.path.join('./stat_fig/PCA/col6_3labels', '2D_PCA.png')
 plt.savefig(save_path)
 #plt.show()
+
+#### perform tSNE ########
+def plot_tsne(X, dim=2, perplexity=30.0, scale_data=False):
+    t_sne = TSNE(n_components=dim, perplexity=perplexity)
+    X_embedded_TSNE = t_sne.fit_transform(X)
+
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(1, 1, 1, projection='3d')
+    ax.scatter(X_embedded_TSNE[y0,0], X_embedded_TSNE[y0, 1], color='r', marker='*', label='class 0')
+    ax.scatter(X_embedded_TSNE[y1,0], X_embedded_TSNE[y1, 1], color='b', marker='x', label='class 1')
+    ax.scatter(X_embedded_TSNE[y2,0], X_embedded_TSNE[y2, 1], color='g', marker='o', label='class 2')
+    ax.grid()
+    ax.legend()
+    ax.set_title("2D t-SNE")
+    if not os.path.exists('./stat_fig/tSNE/col6_3labels'):
+        os.makedirs('./stat_fig/tSNE/col6_3labels')
+    save_path = os.path.join('./stat_fig/tSNE/col6_3labels', '2D_tSNE.png')
+    plt.savefig(save_path)
+    #plt.show()
+    return X_embedded_TSNE
+
+X_embedded_TSNE = plot_tsne(X_five, dim=2, perplexity=20.0)#we've already scaled the data
