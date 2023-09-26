@@ -8,6 +8,7 @@ import scipy
 import seaborn as sns
 from main import updated_dataset
 import os
+import itertools
 def plot_histogram(df, column_name, save_dir='./stat_fig/col_hists'):
     """
     Create and display a histogram for a specified column in a DataFrame.
@@ -67,7 +68,8 @@ def most_prominent_vals(df,column_name,num_of_cols = 3):
         num_of_cols : amount of col. members in most frequented values list
     """
     # Specify custom bin edges to ensure integer values in the bins
-    custom_bin_edges = range(min(df[column_name]), max(df['5']) + 2)  # +2 to include the maximum value
+    custom_bin_edges = range(min(df[column_name]), max(df[column_name]) + 2)  # +2 to include the maximum value
+    print(custom_bin_edges)
     # Create a histogram using custom bin edges
     hist, bins = np.histogram(df[column_name], bins=custom_bin_edges)
 
@@ -81,18 +83,93 @@ def most_prominent_vals(df,column_name,num_of_cols = 3):
 
     # Print the top 5 bins (values and frequencies)
     print(f"Most frequented values of Column number: {column_name}")
+    tot_percent = 0
     for i in range(num_of_cols):
 
-        print(f"Bin {i+1}: Value = {top_values[i]}, Frequency = {top_frequencies[i]}")
+        print(f"Bin {i+1}: Value = {top_values[i]}, Frequency = {top_frequencies[i]},"
+              f" Portion: = {(top_frequencies[i]/len(df[column_name])):.2%}")
+        tot_percent += top_frequencies[i]/len(df[column_name])
+    print(f" Total Portion: = {tot_percent:.2%}")
     return top_values
 
 
-most_prominent_vals(updated_dataset,'5')
+most_prominent_vals(updated_dataset,'4', num_of_cols=10)
 most_prominent_vals(updated_dataset,'4')
+
+########examine labeling of last two columns################
+def concatenate_and_histogram(df, column1_name, column2_name, save_directory, num_of_cols=10, all_bins=False):
+    """
+    Create and display a histogram based on the concatenated values of two columns.
+
+    Args:
+        df (pd.DataFrame): The DataFrame containing the data.
+        column1_name (str): The name of the first column to concatenate.
+        column2_name (str): The name of the second column to concatenate.
+        save_directory (str): The directory where the histogram figures will be saved.
+    """
+    # Concatenate the values of the two specified columns
+    concatenated_values = df[column1_name].astype(str) + '-' + df[column2_name].astype(str)
+
+    # Create a histogram using unique concatenated values as bins
+    all_unique_values, all_counts = np.unique(concatenated_values, return_counts=True)
+
+    # Sort the values by count in descending order
+    sorted_indices = np.argsort(all_counts)[-num_of_cols:][::-1]
+    all_sorted_indices = np.argsort(all_counts)[::-1]
+    unique_values = all_unique_values[sorted_indices]
+    all_unique_values = all_unique_values[all_sorted_indices]
+    counts = all_counts[sorted_indices]
+    all_counts = all_counts[all_sorted_indices]
+
+    # Plot the histogram
+    if all_bins:
+        plt.bar(all_unique_values, all_counts)
+    else:
+        plt.bar(unique_values, counts)
+    plt.xlabel("Concatenated Values")
+    plt.ylabel("Frequency")
+    plt.title(f"Histogram based on {column1_name} and {column2_name}")
+
+    # Create the save directory if it doesn't exist
+    if not os.path.exists(save_directory):
+        os.makedirs(save_directory)
+
+    # Define the save filename including the directory path
+    save_filename = os.path.join(save_directory, f"{column1_name}_{column2_name}_histogram.png")
+
+    # Save the figure to the specified directory
+    plt.savefig(save_filename)
+    # Clear the current figure to prepare for the next plot
+    plt.clf()
+
+    # Display the plot
+    #plt.show()
+    tot_percent = 0
+    print(f"Histogram based on Concatenated Columns: {column1_name} and {column2_name}")
+    for i, value in enumerate(unique_values):
+        print(f"Bin {i + 1}: Value = {value}, Frequency = {counts[i]}",
+              f" Portion: = {(counts[i] / len(df[column1_name])):.2%}")
+        tot_percent += counts[i] / len(df[column1_name])
+        print(f" Total Portion: = {tot_percent:.2%}")
+
 
 ### focus only on "weak" balls
 columns_to_drop = ['Draw ID', 'Strong Number']
 weak_balls_data = updated_dataset.drop(columns=columns_to_drop)
+
+# Specify the directory where the histogram figures will be saved
+save_directory = "./stat_fig/pairs_hists_top10"
+
+# Get the column names as a list
+column_names = weak_balls_data.columns.tolist()
+
+# Generate all possible pairs of two columns
+column_pairs = list(itertools.combinations(column_names, 2))
+
+# Iterate through the pairs and run the function for each pair
+for pair in column_pairs:
+    column_name1, column_name2 = pair
+    concatenate_and_histogram(weak_balls_data, column_name1, column_name2, save_directory)
 
 
 #### perform PCA ###
