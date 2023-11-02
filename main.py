@@ -24,6 +24,9 @@ first_column_value = first_row.iloc[0]
 target_index = dataset[dataset.iloc[:, 0] == first_column_value].index[0]
 # Create a new DataFrame with rows from the beginning up to (but not including) the target row
 updated_dataset = dataset.iloc[:target_index]
+# Save the updated_dataset to a new CSV file
+updated_dataset.to_csv('./data/Updated_Lotto.csv', index=False)
+
 MAX_BALL_NUM = updated_dataset['Strong Number'].max()
 MAX_BALL_NUM
 

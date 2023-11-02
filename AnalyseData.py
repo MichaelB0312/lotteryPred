@@ -156,6 +156,8 @@ def concatenate_and_histogram(df, column1_name, column2_name, save_directory, nu
 ### focus only on "weak" balls
 columns_to_drop = ['Draw ID', 'Strong Number']
 weak_balls_data = updated_dataset.drop(columns=columns_to_drop)
+# Save the updated_dataset to a new CSV file
+weak_balls_data.to_csv('./data/weak_balls.csv', index=True)
 
 # Specify the directory where the histogram figures will be saved
 save_directory = "./stat_fig/pairs_hists_top10"
