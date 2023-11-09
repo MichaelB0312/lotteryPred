@@ -36,7 +36,7 @@ MAX_BALL_NUM
 min_range = updated_dataset['5'].min()
 min_row = updated_dataset[updated_dataset['5'] == min_range]
 max_range = updated_dataset['5'].max()
-print(min_row )
+print(min_row)
 print("max_range is:", max_range)
 # Plot a histogram for the specified column
 plt.hist(updated_dataset['5'], bins=max_range - min_range +1, color='blue', edgecolor='black')

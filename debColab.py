@@ -369,11 +369,15 @@ class TransformerPooling(nn.Module):
 
     def forward(self, x):
         x = self.encoder(x)  # [batch_size, seq_len, d_model]
-        print(x.shape)
+        #print(x.shape)
         x = torch.mean(x, dim=1)  # [batch_size, d_model], can also use torch.mean(dim=1) or just x[:, -1]
         x = self.dense(x)  # [batch_size, num_answers]
         return x
 
+# the original implementation from the tutorial - leave untouched (for your own sake), copy-paste what you need to another cell
+
+# reparametrization trick
+MAX_BALL_NUM = 37
 # the original implementation from the tutorial - leave untouched (for your own sake), copy-paste what you need to another cell
 
 # reparametrization trick
@@ -401,7 +405,7 @@ class VaeEncoder(torch.nn.Module):
        :param device: cpu or gpu
        """
 
-    def __init__(self, x_dim=28*28, hidden_size=256, z_dim=10, device=torch.device("cpu"), is_fc=False):
+    def __init__(self, x_dim=28*28, hidden_size=256, num_layers=1, z_dim=10, device=torch.device("cpu"), is_fc=False):
         super(VaeEncoder, self).__init__()
         self.x_dim = x_dim
         self.hidden_size = hidden_size
@@ -412,7 +416,7 @@ class VaeEncoder(torch.nn.Module):
           self.features = nn.Sequential(nn.Linear(x_dim, self.hidden_size),
                                       nn.ReLU())
         else:
-          self.features = TransformerPooling(num_layers=1, d_model=16, num_heads=2, conv_hidden_dim=64, input_vocab_size=39,
+          self.features = TransformerPooling(num_layers, d_model=16, num_heads=2, conv_hidden_dim=64, input_vocab_size=39,
                                           maximum_position_encoding=10000, hidden_size=self.hidden_size)
 
 
@@ -450,15 +454,25 @@ class VaeDecoder(torch.nn.Module):
        :param z_dim: latent dimensions
        """
 
-    def __init__(self, x_dim=28*28, hidden_size=256, z_dim=10):
+    def __init__(self, x_dim=28*28, hidden_size=256, z_dim=10, extraDecFC_dim=64, isExtraLayer=False):
         super(VaeDecoder, self).__init__()
         self.x_dim = x_dim
         self.hidden_size = hidden_size
         self.z_dim = z_dim
+        self.extraDecFC_dim = extraDecFC_dim
+        self.isExtraLayer = isExtraLayer
 
         self.decoder = nn.Sequential(nn.Linear(self.z_dim, self.hidden_size),
                                      nn.ReLU(),
                                      nn.Linear(self.hidden_size, self.x_dim),
+                                     #nn.Sigmoid()
+                                     )
+
+        self.longDecoder = nn.Sequential(nn.Linear(self.z_dim, self.hidden_size),
+                                     nn.ReLU(),
+                                     nn.Linear(self.hidden_size, self.extraDecFC_dim),
+                                     nn.ReLU(),
+                                     nn.Linear(self.extraDecFC_dim, self.x_dim)
                                      #nn.Sigmoid()
                                      )
         # why we use sigmoid? becaue the pixel values of images are in [0,1] and sigmoid(x) does just that!
@@ -470,18 +484,23 @@ class VaeDecoder(torch.nn.Module):
         This is the function called when doing the forward pass:
         x_reconstruction = VaeDecoder(z)
         """
-        x = self.decoder(x)
+        if self.isExtraLayer:
+          x = self.longDecoder(x)
+        else:
+          x = self.decoder(x)
+
         return x
 
 
 class Vae(torch.nn.Module):
-    def __init__(self, x_dim=28*28, z_dim=10, hidden_size=256, device=torch.device("cpu")):
+    def __init__(self, x_dim=28*28, z_dim=10, hidden_size=256, device=torch.device("cpu"), num_layers=1, extraDecFC_dim=64, isExtraLayer=False):
         super(Vae, self).__init__()
         self.device = device
         self.z_dim = z_dim
 
-        self.encoder = VaeEncoder(x_dim, hidden_size, z_dim=z_dim, device=device)
-        self.decoder = VaeDecoder(x_dim, hidden_size, z_dim=z_dim)
+        self.encoder = VaeEncoder(x_dim, hidden_size, num_layers, z_dim=z_dim, device=device)
+        self.decoder = VaeDecoder(x_dim, hidden_size, z_dim=z_dim, extraDecFC_dim=64, isExtraLayer=isExtraLayer)
+        print("input shape", X_DIM)
 
     def encode(self, x):
         z, mu, logvar = self.encoder(x)
@@ -498,7 +517,12 @@ class Vae(torch.nn.Module):
         Sample z ~ N(0,1)
         """
         z = torch.randn(num_samples, self.z_dim).to(self.device)
-        return self.decode(z)
+        decodedZ = self.decode(z)
+        #print(decodedZ.shape)
+        decodedZ = decodedZ.round()
+        #print("rounded", decodedZ.shape)
+        decodedZ = torch.clamp(decodedZ, min=1, max=MAX_BALL_NUM)
+        return decodedZ
 
     def forward(self, x):
         """
@@ -536,7 +560,6 @@ def loss_function(recon_x, x, mu, logvar, loss_type='bce'):
     # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
     kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return (recon_error + kl) / x.size(0)
-
 # section 1
 def beta_loss_function(recon_x, x, mu, logvar, loss_type='bce',beta=1):
     """
@@ -620,17 +643,21 @@ for batch in sample_dataloader:
 
 
 # define hyper-parameters
-BATCH_SIZE = 32 # usually 32/64/128/256
+BATCH_SIZE = 16 # usually 32/64/128/256
 LEARNING_RATE = 1e-3 # for the gradient optimizer
-NUM_EPOCHS = 50 # how many epochs to run?
+NUM_EPOCHS = 80 # how many epochs to run?
 HIDDEN_SIZE = 128 # size of the hidden layers in the networks
+TRANS_LAYERS = 2
 X_DIM = 6 # size of the input dimension
 Z_DIM = 10 # size of the latent dimensio
+EXTRA_DEC = True # option for another layer in VAE decoder
+EXTRA_DEC_DIM = 64
 
 # check if there is gpu avilable, if there is, use it
 if torch.cuda.is_available():
  torch.cuda.current_device()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 # training
 
@@ -647,9 +674,9 @@ train_losses = []
 train_kl_losses = []
 train_recon_losses = []
 # here we go
-for beta in [0.05,0.5,1.5]:
+for beta in [0.5,1.5,2]:
   print("The beta is:",beta)
-  vae = Vae(x_dim=X_DIM, z_dim=Z_DIM, hidden_size=HIDDEN_SIZE, device=device).to(device)
+  vae = Vae(x_dim=X_DIM, z_dim=Z_DIM, hidden_size=HIDDEN_SIZE, device=device, num_layers=TRANS_LAYERS, extraDecFC_dim=EXTRA_DEC_DIM, isExtraLayer=EXTRA_DEC).to(device)
   # optimizer
   vae_optim = torch.optim.Adam(params=vae.parameters(), lr=LEARNING_RATE)
   for epoch in range(NUM_EPOCHS):
@@ -664,7 +691,7 @@ for beta in [0.05,0.5,1.5]:
       # calculate the loss
       x = x.float()
       loss,kl_d,recon_err = beta_loss_function(x_recon, x, mu, logvar, loss_type='mse',beta=beta)
-      print(type(loss))
+      #print(type(loss))
       # optimization (same 3 steps everytime)
       vae_optim.zero_grad()
       loss.backward()
@@ -681,6 +708,81 @@ for beta in [0.05,0.5,1.5]:
 
   # save
   check_pts_names = []
-  check_pts_names.append("./beta_" + str(beta) + "_vae_50_epochs.pth")
+  if not EXTRA_DEC:
+    check_pts_names.append("./beta_" + str(beta) + "_vaeTrans_" + str(NUM_EPOCHS) + "_epochs_" + str(TRANS_LAYERS) + "_layers.pth")
+  else:
+    check_pts_names.append("./beta_" + str(beta) + "_vaeTrans_" + str(NUM_EPOCHS) + "_epochs_" + str(TRANS_LAYERS) + "_layers" + str(EXTRA_DEC_DIM) + "dim_extraDec.pth")
   torch.save(vae.state_dict(), check_pts_names[-1])
   print("saved checkpoint @", check_pts_names[-1])
+
+
+from IPython.display import display, Math
+fig = plt.figure(figsize=(8, 10))
+ax = fig.add_subplot(2, 1, 1)
+ax.plot(train_kl_losses[0:79], color='r', label='beta = 0.5')
+ax.plot(train_kl_losses[80:159], color='b', label='beta = 1.5')
+ax.plot(train_kl_losses[160:239], color='g', label='beta = 2')
+ax.grid()
+ax.legend()
+ax.set_title('KL Divergence')
+
+ax = fig.add_subplot(2, 1, 2)
+ax.plot(train_recon_losses[0:79], color='r', label='beta = 0.5')
+ax.plot(train_recon_losses[80:159], color='b', label='beta = 1.5')
+ax.plot(train_recon_losses[160:239], color='g', label='beta = 2')
+ax.grid()
+ax.legend()
+ax.set_title('Reconstruction Loss')
+
+import csv
+
+# Define the file name for the CSV file
+csv_filename = "_vaeTrans_" + str(NUM_EPOCHS) + "_epochs_" + str(TRANS_LAYERS) + "_losses.csv"
+
+# Create a list of dictionaries to store the data of beta 2(most intresting)
+data = [
+    {"Epoch": epoch, "Total Loss": loss, "KL Loss": kl_loss, "Reconstruction Loss": recon_loss}
+    for epoch, loss, kl_loss, recon_loss in zip(range(NUM_EPOCHS), train_losses[160:239], train_kl_losses[160:239]
+                                                , train_recon_losses[160:239])
+]
+
+# Save the data to a CSV file
+with open(csv_filename, "w", newline="") as csv_file:
+    fieldnames = ["Epoch", "Total Loss", "KL Loss", "Reconstruction Loss"]
+    writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(data)
+
+print(f"Saved the losses to {csv_filename}")
+
+
+fig.savefig("_vaeTrans_" + str(NUM_EPOCHS) + "_epochs_" + str(TRANS_LAYERS) + "_layers.png")  # Save the plot as a PNG file
+
+plt.tight_layout()
+
+# section 5
+
+vae = Vae(x_dim=X_DIM, z_dim=Z_DIM, hidden_size=HIDDEN_SIZE, device=device, num_layers=TRANS_LAYERS, extraDecFC_dim=EXTRA_DEC_DIM, isExtraLayer=EXTRA_DEC,).to(device)
+betas = {'0.5':'./beta_0.5_vaeTrans_' + str(NUM_EPOCHS) + '_epochs_' + str(TRANS_LAYERS) + '_layers.pth',
+         '1.5':'./beta_1.5_vaeTrans_' + str(NUM_EPOCHS) + '_epochs_' + str(TRANS_LAYERS) + '_layers.pth',
+         '2':'./beta_2_vaeTrans_' + str(NUM_EPOCHS) + '_epochs_' + str(TRANS_LAYERS) + '_layers.pth'}
+
+if EXTRA_DEC:
+  betas = {'0.5':'./beta_0.5_vaeTrans_' + str(NUM_EPOCHS) + '_epochs_' + str(TRANS_LAYERS) + '_layers' + str(EXTRA_DEC_DIM) + "dim_extraDec.pth",
+         '1.5':'./beta_1.5_vaeTrans_' + str(NUM_EPOCHS) + '_epochs_' + str(TRANS_LAYERS) + '_layers' + str(EXTRA_DEC_DIM) + "dim_extraDec.pth",
+         '2':'./beta_2_vaeTrans_' + str(NUM_EPOCHS) + '_epochs_' + str(TRANS_LAYERS) + '_layers' + str(EXTRA_DEC_DIM) + "dim_extraDec.pth"}
+#print("loaded checkpoint from", vae.load_state_dict(torch.load('/content/beta_0.05_vae_50_epochs.pth')))
+
+for i in range(0,3):
+  # now let's sample from the vae
+  n_samples = 5
+  #print(vae.sample(num_samples=n_samples).shape)
+  vae_samples = vae.sample(num_samples=n_samples).data.cpu().numpy().reshape(5,6)
+  print("shape", vae_samples.shape)
+  fig = plt.figure(figsize=(8 ,5))
+  for j in range(vae_samples.shape[0]):
+    vae.load_state_dict(torch.load('./vaeTrans/exp_vaeTrans_extraDec64dim/_vaeTrans_80_epochs_2_layers64dim_extraDec.pth', map_location=torch.device('cpu')))
+    print(vae_samples[j])
+    #ax = fig.add_subplot(3, 5, j + 1)
+    #ax.imshow(vae_samples[j], cmap='gray')
+    #ax.set_axis_off()
