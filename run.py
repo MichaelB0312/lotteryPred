@@ -81,3 +81,9 @@ print(f"Saved the losses to {csv_filename}")
 fig.savefig(args.exp_dir + "/losses.png")  # Save the plot as a PNG file
 
 plt.tight_layout()
+
+import pickle
+
+# Save the args to a file
+with open('args.pkl', 'wb') as f:
+    pickle.dump(args, f)
