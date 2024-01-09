@@ -39,3 +39,5 @@ for i in range(0,3):
   for j in range(vae_samples.shape[0]):
     vae.load_state_dict(torch.load('./vaeTrans/100_epochs_2_layers_64dim_extraDec/beta_2.pth'))
     print(vae_samples[j])
+
+

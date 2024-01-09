@@ -1,33 +1,37 @@
-import pandas as pd
+import cv2
 import numpy as np
+from matplotlib import pyplot as plt
 
-def concatenate_and_histogram(df, column1_name, column2_name):
-    """
-    Create and display a histogram based on the concatenated values of two columns.
-
-    Args:
-        df (pd.DataFrame): The DataFrame containing the data.
-        column1_name (str): The name of the first column to concatenate.
-        column2_name (str): The name of the second column to concatenate.
-    """
-    # Concatenate the values of the two specified columns
-    concatenated_values = df[column1_name].astype(str) + '-' + df[column2_name].astype(str)
-
-    # Create a histogram using unique concatenated values as bins
-    unique_values, counts = np.unique(concatenated_values, return_counts=True)
-
-    # Sort the values by count in descending order
-    sorted_indices = np.argsort(counts)[::-1]
-    unique_values = unique_values[sorted_indices]
-    counts = counts[sorted_indices]
-
-    # Print the histogram (values and frequencies)
-    print(f"Histogram based on Concatenated Columns: {column1_name} and {column2_name}")
-    for i, value in enumerate(unique_values):
-        print(f"Bin {i + 1}: Value = {value}, Frequency = {counts[i]}")
-
-# Example usage:
-data = {'column5': [1, 2, 2, 3, 3, 3, 4, 4, 4, 4],
-        'column6': [5, 6, 6, 7, 7, 7, 8, 8, 8, 8]}
-df = pd.DataFrame(data)
-concatenate_and_histogram(df, 'column5', 'column6')
+# # Read the image
+# image = cv2.imread('./imgg.jpg')
+#
+# # Split the image into its color channels
+# b, g, r = cv2.split(image)
+#
+# # Apply GaussianBlur to each color channel
+# b_blurred = cv2.GaussianBlur(b, (3, 3), 0)
+# g_blurred = cv2.GaussianBlur(g, (3, 3), 0)
+# r_blurred = cv2.GaussianBlur(r, (3, 3), 0)
+#
+# # Create a sharpening filter
+# kernel = np.array([[-1, -1, -1],
+#                    [-1,  9, -1],
+#                    [-1, -1, -1]])
+#
+# # Apply the filter to each color channel to sharpen them
+# b_sharpened = cv2.filter2D(b_blurred, -1, kernel)
+# g_sharpened = cv2.filter2D(g_blurred, -1, kernel)
+# r_sharpened = cv2.filter2D(r_blurred, -1, kernel)
+#
+# # Merge the sharpened color channels back into an RGB image
+# sharpened_image_rgb = cv2.merge([b_sharpened, g_sharpened, r_sharpened])
+#
+# # Save the sharpened image
+# cv2.imwrite('sharpened_image_rgb.jpg', sharpened_image_rgb)
+#
+# # Display the images
+# plt.figure(figsize=(12, 4))
+# plt.subplot(131), plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)), plt.title('Original Image')
+# plt.subplot(132), plt.imshow(cv2.cvtColor(sharpened_image_rgb, cv2.COLOR_BGR2RGB)), plt.title('Sharpened Image (RGB)')
+# plt.subplot(133), plt.imshow(cv2.cvtColor(image - sharpened_image_rgb, cv2.COLOR_BGR2RGB)), plt.title('Difference')
+# plt.show()

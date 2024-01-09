@@ -27,9 +27,15 @@ updated_dataset = dataset.iloc[:target_index]
 # Save the updated_dataset to a new CSV file
 updated_dataset.to_csv('./data/Updated_Lotto.csv', index=False)
 
-MAX_BALL_NUM = updated_dataset['Strong Number'].max()
+MAX_BALL_NUM = pd.read_csv('./data/strong_balls.csv').iloc[:, 0].max()
 MAX_BALL_NUM
-
+df = pd.read_csv('./data/strong_balls.csv')
+# Find the first row where the second column has a value greater than 7
+first_row = df[df.iloc[:, 1] > 7].iloc[0]
+print("The first row where the second column has a value greater than 7 is:")
+print(first_row[0])
+updated_strong_balls = df.iloc[:(first_row[0]-1)]
+updated_strong_balls.to_csv('./data/Updated_Sballs.csv', index=False)
 #lotto_dataset
 
 ##### some histograms of columns #####

@@ -12,9 +12,9 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset, ConcatDataset
 import torchvision
 
-
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 # Split data to train-val-test randomely
-def split_data(csv_data):
+def split_data(csv_data, toShuffle=True):
   # Load your data from the CSV file
   data = []  # To store the rows from the CSV file
 
@@ -28,10 +28,12 @@ def split_data(csv_data):
   random.seed(42)
 
   # Shuffle your data
-  random.shuffle(data)
+  if toShuffle:
+    print("shuffling data")
+    random.shuffle(data)
 
   # Define the proportions for the splits (e.g., 80% train, 10% validation, 10% test)
-  split_ratio = [0.85, 0.1, 0.05]
+  split_ratio = [0.9, 0.05, 0.05]
 
   # Calculate the number of samples for each split
   total_samples = len(data)
@@ -40,7 +42,7 @@ def split_data(csv_data):
 
   # Split the data into training, validation, and test sets
   train_data = data[:train_size]
-  print(len(train_data))
+  print("len of train_data", len(train_data))
   val_data = data[train_size:train_size + val_size]
   test_data = data[train_size + val_size:]
 
@@ -50,4 +52,44 @@ def split_data(csv_data):
   test_data = torch.tensor([[int(value) for value in row] for row in test_data])
 
   return train_data, val_data, test_data
+
+# train_data, val_data, test_data = split_data('./data/strong_balls.csv', toShuffle=False)
+# type(train_data[0])
+
+def batchify(data, bsz):
+  """Divides the data into bsz separate sequences, removing extra elements
+  that wouldn't cleanly fit.
+
+  Args:
+      data: Tensor, shape [N]
+      bsz: int, batch size
+
+  Returns:
+      Tensor of shape [N // bsz, bsz]
+  """
+
+  seq_len = len(data) // bsz
+  data = data[:seq_len * bsz]
+  #print(type(data))
+  # Reshape the list of tensors
+  data = data.view(bsz, seq_len).t().contiguous()
+
+  return data.to(device)
+
+
+def get_batch(source, i, bptt):
+    """
+    Args:
+        source: Tensor, shape [full_seq_len, batch_size]
+        i: int
+        bptt: int
+    Returns:
+        tuple (data, target), where data has shape [seq_len, batch_size] and
+        target has shape [seq_len * batch_size]
+    """
+    seq_len = min(bptt, len(source) - 1 - i)
+    data = source[i:i + seq_len]
+    target = source[i+1:i+seq_len+1]# compelte
+    return data, target
+
 

@@ -24,6 +24,12 @@ betas = {'0.5': args.exp_dir + '/beta_0.5.pth',
 
 print(args)
 # GUI Functions
+# Function to change the background color
+def change_background_color():
+    current_color = root.cget("bg")
+    new_color = "cyan" if current_color == "yellow" else "red"
+    root.config(bg=new_color)
+    root.after(2000, change_background_color)  # Repeat every 2000 milliseconds (2 seconds)
 def load_checkpoint(beta_value):
     vae.load_state_dict(torch.load(betas[beta_value]))
     result_text.delete(1.0, END)  # Clear the previous results when loading a new checkpoint
@@ -40,27 +46,41 @@ def sample_and_display():
 root = Tk()
 root.title("VAE Sample GUI")
 
+# Improve Layout
+frame = tk.Frame(root, padx=10, pady=10)
+frame.pack(padx=20, pady=20)
+
+# Set the initial background color
+root.config(bg="red")
+
+# Call the function to start the breathing effect
+change_background_color()
+
 # Label
-label = Label(root, text="Select Beta Value:")
-label.pack()
+label = Label(frame, text="Select Beta Value:")
+label.grid(row=0, column=0, columnspan=2, pady=10)
 
 # Dropdown menu
 selected_beta = StringVar(root)
 selected_beta.set('0.5')  # default value
-beta_menu = tk.OptionMenu(root, selected_beta, *betas.keys())
-beta_menu.pack()
+beta_menu = tk.OptionMenu(frame, selected_beta, *betas.keys())
+beta_menu.grid(row=1, column=0, columnspan=2, pady=10)
 
 # Load Checkpoint Button
-load_button = Button(root, text="Load Checkpoint", command=lambda: load_checkpoint(selected_beta.get()))
-load_button.pack()
+load_button = Button(frame, text="Load Checkpoint", command=lambda: load_checkpoint(selected_beta.get()), padx=10, pady=5)
+load_button.grid(row=2, column=0, pady=10)
 
 # Sample and Display Button
-sample_button = Button(root, text="Sample and Display", command=sample_and_display)
-sample_button.pack()
+sample_button = Button(frame, text="Sample and Display", command=sample_and_display, padx=10, pady=5)
+sample_button.grid(row=2, column=1, pady=10)
 
 # Results Text Box
-result_text = Text(root, height=10, width=40)
-result_text.pack()
+result_text = Text(frame, height=40, width=80)
+result_text.grid(row=3, column=0, columnspan=2, pady=10)
+
+# Add a Heading
+heading_label = Label(frame, text="Variational Autoencoder (VAE) Sample GUI", font=("Helvetica", 16, "bold"))
+heading_label.grid(row=0, column=0, columnspan=2, pady=10)
 
 # Run Tkinter event loop
 root.mainloop()

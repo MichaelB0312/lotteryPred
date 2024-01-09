@@ -24,7 +24,6 @@ if torch.cuda.is_available():
  torch.cuda.current_device()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-
 train_data, val_data, test_data = split_data('./data/weak_balls.csv')
 sample_dataloader = DataLoader(train_data, batch_size=16, shuffle=True, drop_last=True)
 print(len(sample_dataloader))
