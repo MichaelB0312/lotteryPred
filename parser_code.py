@@ -23,7 +23,8 @@ parser.add_argument("--hidden_size", type=int, default=128, help="size of the hi
 parser.add_argument("--extraDec", type=bool, default=False, help="extra layer for VAE decoder")
 parser.add_argument("--extra_dec_dim", type=int, default=64, help="dim of extra layer")
 parser.add_argument("--recon_loss", type=str, default="mse", help="the reconstruction loss function", choices=["bce", "mse", "l1"])
-# Strong Balls args
+
+# Strong Balls Exp args
 parser.add_argument('-sb', '--strong-batch', default=20, type=int, metavar='N', help='mini-batch size for Strong Balls')
 parser.add_argument('-esb', '--eval-strong-batch', default=10, type=int, metavar='N', help='eval-batch size for Strong Balls')
 parser.add_argument('--embdSize', default=220, type=int, help='embedding size for transformer')
@@ -34,7 +35,8 @@ parser.add_argument('--drop', default=0.1, type=float, help='dropout')
 parser.add_argument("--norm_first", type=bool, default=False, help="the reconstruction loss function", choices=[False,True])
 parser.add_argument('--strg_epochs', default=10, type=int, help='num of epochs')
 parser.add_argument('--bptt', default=10, type=int, help='len sample and target for seq-to-seq')
-
+parser.add_argument('--gama', default=0.95, type=float, help='factor reducing for lr scheduler')
+parser.add_argument('--step_size', default=1, type=int, help='step size for lr scheduler')
 
 args = parser.parse_args()
 MAX_WEAK = args.max_weak
