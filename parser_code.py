@@ -3,7 +3,7 @@ import argparse
 
 # I/O args
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--exp-dir", type=str, default="./vaeTrans", help="experiment name")
+parser.add_argument("--exp-dir", type=str, default="./StrongBallsExp", help="experiment name")
 parser.add_argument("--exp-par", type=str, default="/", help="experiment params")
 parser.add_argument("--csv_file", type=str, default="/vaeTrans", help="experiment name")
 # training and optimization args
@@ -33,15 +33,20 @@ parser.add_argument('--enc_layers', default=4, type=int, help='num of encoder la
 parser.add_argument('--atn_layers', default=2, type=int, help='num of attention units')
 parser.add_argument('--drop', default=0.1, type=float, help='dropout')
 parser.add_argument("--norm_first", type=bool, default=False, help="the reconstruction loss function", choices=[False,True])
-parser.add_argument('--strg_epochs', default=10, type=int, help='num of epochs')
+parser.add_argument('--strg_epochs', default=40, type=int, help='num of epochs')
 parser.add_argument('--bptt', default=10, type=int, help='len sample and target for seq-to-seq')
 parser.add_argument('--gama', default=0.95, type=float, help='factor reducing for lr scheduler')
 parser.add_argument('--step_size', default=1, type=int, help='step size for lr scheduler')
+parser.add_argument('--n_trials', default=100, type=int, help='num of trials for optuna')
+parser.add_argument('--timeout', default=600, type=int, help='timeout for optuna')
 
 args = parser.parse_args()
 MAX_WEAK = args.max_weak
 MAX_STRONG = args.max_strong
-args.exp_par = args.exp_par + str(args.n_epochs) + "_epochs_" + str(args.trans_layers) + "_layers"
-if args.extraDec:
-    args.exp_par = args.exp_par + "_" + str(args.extra_dec_dim) + "dim_extraDec"
+if args.exp_dir == '/vaeTrans':
+    args.exp_par = args.exp_par + str(args.n_epochs) + "_epochs_" + str(args.trans_layers) + "_layers"
+    if args.extraDec:
+        args.exp_par = args.exp_par + "_" + str(args.extra_dec_dim) + "dim_extraDec"
+elif args.exp_dir == './StrongBallsExp':
+    args.exp_par = args.exp_par + str(args.strg_epochs) + "_epochs_" + str(args.strong_batch) + "_batchSize_" + str(args.bptt) + "_seqLen"
 args.exp_dir = args.exp_dir + args.exp_par

@@ -49,6 +49,10 @@ data,target = dataset_split.get_batch(train_data,i,bptt)
 #     print("target will be:\t" , targets[0][0], targets[1][0])
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print("exp. directory:", args.exp_dir)
+if not os.path.exists(args.exp_dir):
+    os.makedirs(args.exp_dir)
+
 batch_size = args.strong_batch
 epochs = args.strg_epochs
 #n_train_examples = batch_size * 30
@@ -71,6 +75,7 @@ def objective(trial):
     dropout = trial.suggest_float('dropout', 0.0, 0.3)
     norm_first = trial.suggest_categorical('norm_first', [True, False])
     best_val_loss = float("inf")
+    best_model_state_dict = None
 
     # Optimizer-related hyperparameters
     lr = trial.suggest_float('lr', 5e-3, 5.0, log=True)
@@ -86,8 +91,16 @@ def objective(trial):
     for epoch in range(1, epochs + 1):
         epoch_start_time = time.time()
         # ... (training and evaluation code)
+        # Lists to store training and validation losses for each epoch
+        val_losses = []
+
+        epoch_start_time = time.time()
+        # ... (training and evaluation code)
         train(model, train_data, opt, bptt)
         val_loss = evaluate(model, val_data)
+
+        # Append training and validation losses for plotting
+        val_losses.append(val_loss)
 
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
@@ -97,11 +110,11 @@ def objective(trial):
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            best_model = model
+            best_model_state_dict = model.state_dict()
 
         Learning_Scheduler.step()
         
-        # report back to Optuna how far it is (epoch-wise) into the trial and how well it is doing (accuracy)
+        # report back to Optuna how far it is (epoch-wise) into the trial and how well it is doing
         trial.report(best_val_loss, epoch)
 
         # then, Optuna can decide if the trial should be pruned
@@ -109,14 +122,17 @@ def objective(trial):
         if trial.should_prune():
             raise optuna.exceptions.TrialPruned()
 
-    # Return the metric to be optimized (e.g., validation loss)
+    # Save the best model's state dictionary
+    if best_model_state_dict is not None:
+        checkpoint_path = args.exp_dir + '/best_model_checkpoint.pth'
+        torch.save(best_model_state_dict, checkpoint_path)
+    # Return the metric to be optimized (e.g., validation loss) and training loss(wouldn't be optimized)
     return val_loss
-
 
 # now we can run the experiment
 sampler = optuna.samplers.TPESampler()
 study = optuna.create_study(study_name="Strong Ball", direction="minimize", sampler=sampler)
-study.optimize(objective, n_trials=100, timeout=600)
+study.optimize(objective, n_trials=args.n_trials, timeout=args.timeout)
 
 pruned_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.PRUNED]
 complete_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
@@ -128,9 +144,50 @@ print("  Number of complete trials: ", len(complete_trials))
 
 print("Best trial:")
 trial = study.best_trial
+best_val_loss = trial.value
+
+study_data = trial.intermediate_values
+val_value = list(study_data.values())
+# Plotting the losses
+plt.plot(val_value, label='Best Study Validation Loss')
+plt.xlabel('Epoch')
+plt.ylabel('CE Validation')
+plt.legend()
+
+# Save the plot
+plt.savefig(args.exp_dir + "/losses.png")
 
 print("  Value: ", trial.value)
 
-print("  Params: ")
-for key, value in trial.params.items():
-    print("    {}: {}".format(key, value))
+# Save the losses and trial parameters
+with open(args.exp_dir + '/stats.txt', 'w') as f:
+    f.write("Validation Loss: {}\n".format(best_val_loss))
+    f.write("Trial Parameters:\n")
+    print("  Params: ")
+    for key, value in trial.params.items():
+        f.write("  {}: {}\n".format(key, value))
+        print("    {}: {}".format(key, value))
+
+# # Instantiate the model with the best hyperparameters
+# best_model = TransformerModel(
+#     ntoken, best_trial.params['ninp'], best_trial.params['nhead'],
+#     best_trial.params['nhid'], best_trial.params['nlayers'],
+#     best_trial.params['dropout'], best_trial.params['norm_first']
+# )
+#
+# # Train the model with the best hyperparameters
+# for epoch in range(1, epochs + 1):
+#     epoch_start_time = time.time()
+#     # ... (training and evaluation code)
+#     train_loss = train(best_model, train_data, opt, bptt)
+#     val_loss = evaluate(best_model, val_data)
+#
+#     print('-' * 89)
+#     print('| end of epoch {:3d} | time: {:5.2f}s | train loss {:5.2f} | valid loss {:5.2f} |'
+#           .format(epoch, (time.time() - epoch_start_time), train_loss, val_loss))
+#     print('-' * 89)
+#
+#     Learning_Scheduler.step()
+#
+# # Save the trained model
+# torch.save(best_model.state_dict(), 'best_model.pth')
