@@ -39,13 +39,15 @@ def split_data(csv_data, toShuffle=True):
   total_samples = len(data)
   train_size = int(split_ratio[0] * total_samples)
   val_size = int(split_ratio[1] * total_samples)
+  test_size = total_samples - train_size - val_size
 
   # Split the data into training, validation, and test sets
-  train_data = data[:train_size]
-  print("len of train_data", len(train_data))
-  val_data = data[train_size:train_size + val_size]
-  test_data = data[train_size + val_size:]
 
+
+  test_data = data[:test_size]
+  val_data = data[test_size:test_size+val_size]
+  train_data = data[test_size+val_size:]
+  print("len of train_data", len(train_data))
   # Convert the data to PyTorch tensors after converting strings
   train_data = torch.tensor([[int(value) for value in row] for row in train_data])
   val_data = torch.tensor([[int(value) for value in row] for row in val_data])

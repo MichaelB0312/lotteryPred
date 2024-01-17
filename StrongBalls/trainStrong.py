@@ -50,6 +50,7 @@ def train(model, train_data, opt, bptt):
                   f'loss {cur_loss:5.2f} ')
             total_loss = 0
             start_time = time.time()
+    return total_loss
 
 
 def evaluate(model, eval_data):

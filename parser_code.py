@@ -39,6 +39,8 @@ parser.add_argument('--gama', default=0.95, type=float, help='factor reducing fo
 parser.add_argument('--step_size', default=1, type=int, help='step size for lr scheduler')
 parser.add_argument('--n_trials', default=100, type=int, help='num of trials for optuna')
 parser.add_argument('--timeout', default=600, type=int, help='timeout for optuna')
+parser.add_argument("--best_exp", type=str, default="./StrongBallsExp/40_epochs_20_batchSize/stats.txt",
+                    help="file txt. for exp. (optuna) parameters")
 
 args = parser.parse_args()
 MAX_WEAK = args.max_weak
@@ -50,3 +52,4 @@ if args.exp_dir == '/vaeTrans':
 elif args.exp_dir == './StrongBallsExp':
     args.exp_par = args.exp_par + str(args.strg_epochs) + "_epochs_" + str(args.strong_batch) + "_batchSize_" + str(args.bptt) + "_seqLen"
 args.exp_dir = args.exp_dir + args.exp_par
+
