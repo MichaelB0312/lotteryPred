@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import time
 import optuna
-
+import pickle
 # pytorch imports
 import os
 import torch
@@ -117,3 +117,7 @@ plt.legend()
 
 # Save the updated plot
 plt.savefig('performance.png')  # Adjust the path to save the updated plot
+
+# Save the args to a file
+with open(args.exp_dir + '/args.pkl', 'wb') as f:
+    pickle.dump(args, f)

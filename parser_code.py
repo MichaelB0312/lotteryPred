@@ -3,7 +3,7 @@ import argparse
 
 # I/O args
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--exp-dir", type=str, default="./StrongBallsExp", help="experiment name")
+parser.add_argument("--exp-dir", type=str, default="./vaeTrans", help="experiment name")
 parser.add_argument("--exp-par", type=str, default="/", help="experiment params")
 parser.add_argument("--csv_file", type=str, default="/vaeTrans", help="experiment name")
 # training and optimization args
@@ -14,8 +14,10 @@ parser.add_argument("--n-epochs", type=int, default=80, help="number of maximum 
 # MAX number of balls
 parser.add_argument("--max-weak", type=int, default=37, help="max id of weak balls")
 parser.add_argument("--max-strong", type=int, default=7, help="max id of weak balls")
+#num. of samples to generate
+parser.add_argument("--n_samples", type=int, default=4, help="num. of samples to generate")
 
-# model args
+# VAE model args
 parser.add_argument("--trans_layers", type=int, default=2, help="number of Transformer Encoder layers")
 parser.add_argument("--x_dim", type=int, default=6, help="input dimension")
 parser.add_argument("--z_dim", type=int, default=10, help="latent dimension")
@@ -45,7 +47,7 @@ parser.add_argument("--best_exp", type=str, default="./StrongBallsExp/40_epochs_
 args = parser.parse_args()
 MAX_WEAK = args.max_weak
 MAX_STRONG = args.max_strong
-if args.exp_dir == '/vaeTrans':
+if args.exp_dir == './vaeTrans':
     args.exp_par = args.exp_par + str(args.n_epochs) + "_epochs_" + str(args.trans_layers) + "_layers"
     if args.extraDec:
         args.exp_par = args.exp_par + "_" + str(args.extra_dec_dim) + "dim_extraDec"

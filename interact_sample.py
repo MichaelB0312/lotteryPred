@@ -5,22 +5,30 @@ import time
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from Models import Vae
+from Models import Vae, TransformerModel
 from parser_code import args
 import tkinter as tk
 from tkinter import Button, Label, StringVar, Tk, Text, END
 import pickle
+from utils import parse_trial_parameters
+from StrongBalls import Sball_Gen
 
 # Load the args from the file
 with open('args.pkl', 'rb') as f:
-    args = pickle.load(f)
+    args_vae = pickle.load(f)
 
+_, trial_params = parse_trial_parameters(args.best_exp)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-vae = Vae(x_dim=args.x_dim, z_dim=args.z_dim, hidden_size=args.hidden_size, device=device, num_layers=args.trans_layers, extraDecFC_dim=args.extra_dec_dim, isExtraLayer=args.extraDec).to(device)
-betas = {'0.5': args.exp_dir + '/beta_0.5.pth',
-         '1.5': args.exp_dir + '/beta_1.5.pth',
-         '2': args.exp_dir + '/beta_2.pth'}
+vae = Vae(x_dim=args_vae.x_dim, z_dim=args_vae.z_dim, hidden_size=args_vae.hidden_size, device=device, num_layers=args_vae.trans_layers, extraDecFC_dim=args_vae.extra_dec_dim, isExtraLayer=args_vae.extraDec).to(device)
+ntoken = MAX_STRONG + 1  # ntokens, +1 for special token
+sball_model = TransformerModel(ntoken, trial_params['ninp'], trial_params['nhead'],
+    trial_params['nhid'], trial_params['nlayers'],
+    trial_params['dropout'], trial_params['norm_first'])
+
+betas = {'0.5': args_vae.exp_dir + '/beta_0.5.pth',
+         '1.5': args_vae.exp_dir + '/beta_1.5.pth',
+         '2': args_vae.exp_dir + '/beta_2.pth'}
 
 print(args)
 # GUI Functions
@@ -41,6 +49,13 @@ def sample_and_display():
     result_text.insert(tk.END, f"Shape: {vae_samples.shape}\n")
     for j in range(vae_samples.shape[0]):
         result_text.insert(tk.END, f"Sample {j+1}: {vae_samples[j]}\n")
+
+# Function to sample from the Strong Ball model and display the results
+def sample_and_display_strong_ball():
+    strong_ball_samples = Sball_Gen.generate(sball_model)
+    result_text.insert(tk.END, "\n\nStrong Ball Samples:\n")
+    for j in range(strong_ball_samples.shape[0]):
+        result_text.insert(tk.END, f"Strong Ball Sample {j+1}: {strong_ball_samples[j]}\n")
 
 # Create Tkinter GUI
 root = Tk()

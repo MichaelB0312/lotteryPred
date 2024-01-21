@@ -84,5 +84,5 @@ plt.tight_layout()
 import pickle
 
 # Save the args to a file
-with open('args.pkl', 'wb') as f:
+with open('/args.pkl', 'wb') as f:
     pickle.dump(args, f)
