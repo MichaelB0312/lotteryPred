@@ -1,0 +1,10 @@
+Validation Loss: 1.933402180671692
+Trial Parameters:
+  nhead: 3
+  ninp: 216
+  nhid: 376
+  nlayers: 2
+  dropout: 0.1926965043250747
+  norm_first: False
+  lr: 0.05828979939167373
+  optimizer: RAdam

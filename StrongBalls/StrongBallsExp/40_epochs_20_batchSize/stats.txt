@@ -1,0 +1,10 @@
+Validation Loss: 1.9217641353607178
+Trial Parameters:
+  nhead: 3
+  ninp: 216
+  nhid: 371
+  nlayers: 2
+  dropout: 0.08272466078282584
+  norm_first: False
+  lr: 0.03063917385714171
+  optimizer: SGD

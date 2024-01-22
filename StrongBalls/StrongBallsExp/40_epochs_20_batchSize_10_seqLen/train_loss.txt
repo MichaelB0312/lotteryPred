@@ -1,0 +1,2 @@
+Epoch: 1 - Training Loss: 13.04342794418335
+Epoch: 1 - Training Loss: 115.54572105407715
