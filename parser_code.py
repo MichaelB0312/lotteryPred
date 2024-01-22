@@ -5,7 +5,7 @@ import argparse
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--exp-dir", type=str, default="./vaeTrans", help="experiment name")
 parser.add_argument("--exp-par", type=str, default="/", help="experiment params")
-parser.add_argument("--csv_file", type=str, default="/vaeTrans", help="experiment name")
+parser.add_argument("--csv_file", type=str, default="/vaeTrans", help="experiment data")
 # training and optimization args
 parser.add_argument("--optim", type=str, default="adam", help="training optimizer", choices=["sgd", "adam"])
 parser.add_argument('-b', '--batch-size', default=16, type=int, metavar='N', help='mini-batch size (default: 100)')

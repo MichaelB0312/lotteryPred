@@ -402,6 +402,23 @@ class TransformerModel(nn.Module):
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
         return mask
 
+    def generate(self, model_input, nwords=1, temp=1.0):
+        self.eval()
+        sballs = []
+        with torch.no_grad():
+            for i in range(nwords):
+                output = self(model_input, None)
+                output = F.softmax(output, dim=-1)
+                numbers_weights = output[-1].squeeze().div(temp).exp().cpu()
+                while True:  # reject sampling special token
+                    num_idx = torch.multinomial(numbers_weights, 1)[0]
+                    if num_idx != 0:
+                        break
+                num_tensor = torch.Tensor([num_idx]).long().to(model_input.device)
+                model_input = torch.cat([model_input, num_tensor], 0)
+                sballs.append(num_idx)
+        return sballs
+
     def init_weights(self):
         initrange = 0.1
         self.encoder.weight.data.uniform_(-initrange, initrange)
